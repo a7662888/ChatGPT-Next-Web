@@ -53,8 +53,13 @@ Treatment ranking was summarized using frequentist P-scores (0–1; higher value
 ```r
 library(netmeta)
 
-netrank(net1, small.values = "bad")
-rg <- rankogram(net1, small.values = "bad")
+# Set per outcome:
+# - "good": smaller effect estimates are beneficial (e.g., harmful events with OR < 1 favored)
+# - "bad" : larger effect estimates are beneficial
+ranking_direction <- "good"  # change explicitly for each outcome before ranking
+
+netrank(net1, small.values = ranking_direction)
+rg <- rankogram(net1, small.values = ranking_direction)
 plot(rg)
 plot(rg, cumulative.rankprob = TRUE)
 ```
@@ -130,10 +135,14 @@ df$outlier <- abs(rstud$z) > 1.96
 
 res_no_out <- rma(yi, vi, data = df[!df$outlier, ], method = "REML")
 
-cat("Full:", round(exp(coef(res_full)), 2),
-    "(", round(exp(res_full$ci.lb), 2), "-", round(exp(res_full$ci.ub), 2), ")\n")
-cat("No outliers:", round(exp(coef(res_no_out)), 2),
-    "(", round(exp(res_no_out$ci.lb), 2), "-", round(exp(res_no_out$ci.ub), 2), ")\n")
+# Set TRUE only when yi is on a log ratio scale (e.g., log OR / log RR / log HR)
+is_log_scale <- TRUE
+back_transform <- function(x) if (is_log_scale) exp(x) else x
+
+cat("Full:", round(back_transform(coef(res_full)), 2),
+    "(", round(back_transform(res_full$ci.lb), 2), "-", round(back_transform(res_full$ci.ub), 2), ")\n")
+cat("No outliers:", round(back_transform(coef(res_no_out)), 2),
+    "(", round(back_transform(res_no_out$ci.lb), 2), "-", round(back_transform(res_no_out$ci.ub), 2), ")\n")
 ```
 
 ---
@@ -262,4 +271,3 @@ All analyses were scripted and version-controlled. Statistical code and analytic
 - [ ] Sensitivity analyses (outlier/influence/high risk of bias) reported.
 - [ ] Publication bias methods limited to outcomes with adequate study counts.
 - [ ] NMA assumptions (transitivity/consistency) explicitly addressed.
-
